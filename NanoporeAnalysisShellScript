@@ -1,0 +1,51 @@
+#Using pychopper to obtain full length sequences
+
+cdna_classifier.py -t 30 -r report.pdf -u unclassified.fq -w resqued.fq nanopore_raw_fastq.fq full_length_output.fq    
+
+#Indexing genome (dmel-all-chromosome-r6.28-docin-normal.fasta) with minimap2
+
+minimap2 -t 20 -k14 -I 1000G -d dmel-all-chromosome-r6.28-docin-normal.fasta.mmi
+dmel-all-chromosome-r6.28-docin-normal.fasta
+
+#aligning with minimap2
+
+minimap2 -ax splice -uf -k14 -t 20 dmel-all-chromosome-r6.28-docin-normal.fasta.
+mmi full_length_output.fq > mapping.sam
+
+#sorting and indexing with samtools
+
+samtools view -q 10 -F 2304 -Sb -@19 mapping.sam > mapped.bam
+samtools sort -@19 mapped.bam > mapped.sorted.bam
+samtools index -@19 mapped.sorted.bam
+samtools flagstat mapped.sorted.bam
+
+#pinfish pipeline
+
+spliced_bam2gff -t 10 -s mapped.sorted.bam > raw_transcripts.gff
+
+cluster_gff -t 20 -a cluster_memberships.tsv raw_transcripts.gff > clustered_tra
+nscripts.gff
+
+collapse_partials clustered_transcripts.gff > clustered_transcripts_collapsed.gf
+f
+
+polish_clusters -t 20 -a cluster_memberships.tsv -o polished_transcript.fas mapp
+ed.sorted.bam
+
+minimap2 -t 20 -uf -ax splice dmel-all-chromosome-r6.28-docin-normal.fasta.mmi p
+olished_transcript.fas\
+| samtools view -Sb -F 2304 | samtools sort -@ 20 - -o polished_reads_aln_sorted
+.bam;
+samtools index polished_reads_aln_sorted.bam
+
+
+spliced_bam2gff -s -t 20 -M polished_reads_aln_sorted.bam > polished_transcripts
+.gff
+
+
+collapse_partials polished_transcripts.gff > polished_transcripts_collapsed.gff
+
+
+gffread -g dmel-all-chromosome-r6.28-docin-normal.fa
+sta -w corrected_transcriptome_polished_collapsed.fas polished_transcripts_colla
+psed.gff
