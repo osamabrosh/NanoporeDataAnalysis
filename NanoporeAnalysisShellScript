@@ -23,7 +23,7 @@ samtools flagstat mapped.sorted.bam
 
 spliced_bam2gff -t 10 -s mapped.sorted.bam > raw_transcripts.gff
 
-cluster_gff -t 20 -a cluster_memberships.tsv raw_transcripts.gff > clustered_tra
+cluster_gff -c 4 -t 20 -a cluster_memberships.tsv raw_transcripts.gff > clustered_tra
 nscripts.gff
 
 collapse_partials clustered_transcripts.gff > clustered_transcripts_collapsed.gf
